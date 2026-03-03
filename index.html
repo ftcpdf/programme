@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTC PDF — Créateur PDF avec Images</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --red: #e8192c;
+  --red-dark: #b5101f;
+  --red-deep: #7a0a14;
+  --red-glow: #ff2d42;
+  --black: #0a0a0b;
+  --black-2: #111114;
+  --black-3: #18181c;
+  --black-4: #222228;
+  --black-5: #2e2e36;
+  --white: #ffffff;
+  --grey: #9a9aaa;
+  --grey-light: #c8c8d8;
+  --card-bg: #16161a;
+  --card-border: rgba(255,255,255,0.07);
+  --grad-red: linear-gradient(135deg, #e8192c 0%, #ff4d5e 50%, #c4001a 100%);
+  --grad-dark: linear-gradient(180deg, #0a0a0b 0%, #140608 100%);
+  --shadow-red: 0 8px 40px rgba(232,25,44,0.35);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ambient background glow */
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(232,25,44,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== NAVBAR ===== */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,11,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(232,25,44,0.2);
+  padding: 0 3rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+
+.logo-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--grad-red);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-red);
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  color: white;
+}
+
+.logo-text span {
+  background: var(--grad-red);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--grey);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover { color: white; background: rgba(255,255,255,0.05); }
+
+.nav-badge {
+  background: var(--grad-red);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  box-shadow: var(--shadow-red);
+}
+
+/* ===== HERO ===== */
+.hero {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  overflow: hidden;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(232,25,44,0.1);
+  border: 1px solid rgba(232,25,44,0.3);
+  border-radius: 50px;
+  padding: 0.35rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--red-glow);
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hero-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--red-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--red-glow);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero h1 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+
+.hero h1 .gradient-text {
+  background: linear-gradient(135deg, #ff4d5e 0%, #e8192c 40%, #ff7a85 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  color: var(--grey);
+  font-size: 1rem;
+  font-weight: 400;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.app-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+}
+
+.card-header-icon {
+  width: 34px;
+  height: 34px;
+  background: rgba(232,25,44,0.12);
+  border: 1px solid rgba(232,25,44,0.25);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.card-header h2 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.card-header p {
+  font-size: 0.75rem;
+  color: var(--grey);
+  margin-top: 0.1rem;
+}
+
+.card-body { padding: 1.5rem; }
+
+/* ===== DROP ZONE ===== */
+.drop-zone {
+  border: 2px dashed rgba(232,25,44,0.3);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(232,25,44,0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.drop-zone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(232,25,44,0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--red);
+  background: rgba(232,25,44,0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(232,25,44,0.2);
+}
+
+.drop-zone:hover::after, .drop-zone.drag-over::after {
+  opacity: 1;
+}
+
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, rgba(232,25,44,0.2), rgba(232,25,44,0.05));
+  border: 1px solid rgba(232,25,44,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1.25rem;
+  position: relative;
+  z-index: 1;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.drop-zone h3 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.drop-zone p {
+  font-size: 0.8rem;
+  color: var(--grey);
+  position: relative;
+  z-index: 1;
+}
+
+.drop-zone .btn-browse {
+  display: inline-block;
+  margin-top: 1.25rem;
+  background: var(--grad-red);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.55rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-red);
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.drop-zone:hover .btn-browse { opacity: 0.9; transform: scale(1.03); }
+
+/* ===== IMAGES GRID ===== */
+.images-section { margin-top: 1.5rem; }
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--grey);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title .count-badge {
+  background: rgba(232,25,44,0.15);
+  color: var(--red-glow);
+  border: 1px solid rgba(232,25,44,0.2);
+  border-radius: 50px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.image-card {
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--black-4);
+  border: 1px solid var(--card-border);
+  cursor: grab;
+  transition: all 0.2s ease;
+  animation: fadeUp 0.35s ease;
+  position: relative;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.image-card:hover {
+  border-color: rgba(232,25,44,0.4);
+  box-shadow: 0 4px 20px rgba(232,25,44,0.2);
+  transform: translateY(-3px);
+}
+
+.image-card.dragging { opacity: 0.3; cursor: grabbing; }
+
+.image-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+
+.image-card .img-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 0.4rem;
+  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-card:hover .img-overlay { opacity: 1; }
+
+.img-num {
+  background: rgba(232,25,44,0.9);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove {
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.btn-remove:hover { background: var(--red); transform: rotate(90deg); }
+
+.image-card .img-name {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.68rem;
+  color: var(--grey);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid var(--card-border);
+  background: var(--black-3);
+}
+
+.empty-state {
+  display: none;
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--grey);
+  font-size: 0.85rem;
+}
+
+.empty-state.visible { display: block; }
+.empty-state span { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
+
+.drag-hint {
+  font-size: 0.72rem;
+  color: var(--grey);
+  text-align: center;
+  margin-top: 0.75rem;
+  display: none;
+}
+
+.drag-hint.visible { display: block; }
+
+/* ===== SETTINGS PANEL ===== */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  position: sticky;
+  top: 80px;
+}
+
+/* ===== FORM FIELDS ===== */
+.field {
+  margin-bottom: 1rem;
+}
+
+.field:last-child { margin-bottom: 0; }
+
+.field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--grey-light);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--black-3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: rgba(232,25,44,0.5);
+  box-shadow: 0 0 0 3px rgba(232,25,44,0.1);
+}
+
+.field textarea { resize: vertical; min-height: 75px; line-height: 1.5; }
+.field select { cursor: pointer; }
+.field select option { background: var(--black-3); }
+
+/* Layout grid */
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.layout-opt input[type="radio"] { display: none; }
+
+.layout-opt label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.4rem;
+  background: var(--black-3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--grey);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.layout-opt input:checked + label {
+  border-color: var(--red);
+  background: rgba(232,25,44,0.12);
+  color: var(--red-glow);
+  box-shadow: 0 0 12px rgba(232,25,44,0.2);
+}
+
+.layout-opt label:hover {
+  border-color: rgba(232,25,44,0.4);
+  color: white;
+}
+
+.layout-icon {
+  display: grid;
+  width: 32px;
+  height: 24px;
+  gap: 2px;
+}
+
+.li-1 { grid-template-columns: 1fr; }
+.li-2 { grid-template-columns: 1fr 1fr; }
+.li-3 { grid-template-columns: 1fr 1fr 1fr; }
+.li-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.layout-icon div { background: currentColor; opacity: 0.7; border-radius: 1px; }
+
+/* Color swatches */
+.color-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.color-swatch.active {
+  border-color: white;
+  transform: scale(1.15);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.color-swatch:hover { transform: scale(1.1); }
+
+.color-swatch.active::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.stat-box {
+  background: var(--black-3);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.85rem 0.5rem;
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  background: var(--grad-red);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+  line-height: 1;
+}
+
+.stat-lbl {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--grey);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Progress */
+.progress-wrap {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-wrap.active { display: flex; }
+
+.progress-track {
+  height: 6px;
+  background: var(--black-3);
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--grad-red);
+  width: 0%;
+  border-radius: 50px;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px rgba(232,25,44,0.5);
+}
+
+.progress-label {
+  font-size: 0.75rem;
+  color: var(--grey);
+  text-align: center;
+}
+
+/* Generate Button */
+.btn-generate {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: var(--grad-red);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  letter-spacing: -0.01em;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-generate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn-generate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 48px rgba(232,25,44,0.5);
+}
+
+.btn-generate:hover::before { opacity: 1; }
+
+.btn-generate:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-red);
+}
+
+.btn-generate:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-generate .btn-icon { font-size: 1.1rem; }
+
+/* Clear all btn */
+.btn-clear {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--grey);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-clear:hover { border-color: rgba(232,25,44,0.4); color: var(--red-glow); }
+
+/* ===== FOOTER ===== */
+footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  border-top: 1px solid var(--card-border);
+  color: var(--grey);
+  font-size: 0.78rem;
+}
+
+footer strong { color: var(--red-glow); }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--black-3);
+  color: white;
+  padding: 0.85rem 1.75rem;
+  border-radius: 10px;
+  border-left: 3px solid var(--red);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== DIVIDER ===== */
+.card-divider {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 1rem 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  nav { padding: 0 1.5rem; }
+  .nav-links { display: none; }
+  .app-wrapper { grid-template-columns: 1fr; }
+  .settings-panel { position: relative; top: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="logo-icon">📄</div>
+    <div class="logo-text">FTC <span>PDF</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#" class="nav-link">Accueil</a>
+    <a href="#" class="nav-link">Outils</a>
+    <a href="#" class="nav-link">Aide</a>
+    <a href="#" class="nav-badge">✨ Gratuit</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Outil en ligne gratuit</div>
+  <h1>Créez vos <span class="gradient-text">PDF avec images</span><br>en quelques secondes</h1>
+  <p>Importez vos images, personnalisez la mise en page et téléchargez votre PDF instantanément. Aucune installation requise.</p>
+</div>
+
+<!-- APP -->
+<div class="app-wrapper">
+
+  <!-- LEFT: Upload + Grid -->
+  <div>
+    <!-- Upload Card -->
+    <div class="card" style="margin-bottom: 1.25rem;">
+      <div class="card-header">
+        <div class="card-header-icon">📥</div>
+        <div>
+          <h2>Importer des images</h2>
+          <p>Glissez-déposez ou parcourez vos fichiers</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*" multiple>
+          <div class="drop-icon-wrap">🖼️</div>
+          <h3>Glissez vos images ici</h3>
+          <p>Formats supportés : JPG, PNG, WEBP, GIF, BMP</p>
+          <div class="btn-browse">Parcourir les fichiers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Images Grid Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">🗂️</div>
+        <div>
+          <h2>Images sélectionnées</h2>
+          <p>Réorganisez par glisser-déposer</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="section-title">
+          Ordre dans le PDF
+          <span class="count-badge" id="imgCountBadge">0 image</span>
+        </div>
+        <div class="images-grid" id="imagesGrid"></div>
+        <div class="empty-state visible" id="emptyState">
+          <span>🗃️</span>
+          Aucune image ajoutée — importez des images pour commencer
+        </div>
+        <p class="drag-hint" id="dragHint">↕ Glissez les vignettes pour changer l'ordre</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Settings -->
+  <div class="settings-panel">
+
+    <!-- Document Settings -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">⚙️</div>
+        <div>
+          <h2>Paramètres</h2>
+          <p>Personnalisez votre document</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Titre du document</label>
+          <input type="text" id="pdfTitle" placeholder="Mon document PDF" value="Mon document PDF">
+        </div>
+        <div class="field">
+          <label>Description (optionnel)</label>
+          <textarea id="pdfDesc" placeholder="Ajoutez une note ou description..."></textarea>
+        </div>
+
+        <hr class="card-divider">
+
+        <div class="field">
+          <label>Mise en page — images par page</label>
+          <div class="layout-grid">
+            <div class="layout-opt">
+              <input type="radio" name="layout" id="l1" value="1" checked>
+              <label for="l1">
+                <div class="layout-icon li-1"><div></div></div>
+                1
+              </label>
+            </div>
+            <div class="layout-opt">
+              <input type="radio" name="layout" id="l2" value="2">
+              <label for="l2">
+                <div class="layout-icon li-2"><div></div><div></div></div>
+                2
+              </label>
+            </div>
+            <div class="layout-opt">
+              <input type="radio" name="layout" id="l3" value="3">
+              <label for="l3">
+                <div class="layout-icon li-3"><div></div><div></div><div></div></div>
+                3
+              </label>
+            </div>
+            <div class="layout-opt">
+              <input type="radio" name="layout" id="l4" value="4">
+              <label for="l4">
+                <div class="layout-icon li-4"><div></div><div></div><div></div><div></div></div>
+                4
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Format de page</label>
+          <select id="pageFormat">
+            <option value="a4">A4 — 210 × 297 mm</option>
+            <option value="letter">Letter — 216 × 279 mm</option>
+            <option value="a3">A3 — 297 × 420 mm</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Orientation</label>
+          <select id="pageOrientation">
+            <option value="portrait">📄 Portrait</option>
+            <option value="landscape">🖼️ Paysage</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Couleur de fond</label>
+          <div class="color-row" id="bgColors">
+            <div class="color-swatch active" data-color="#ffffff" style="background:#ffffff; border-color: rgba(255,255,255,0.2);"></div>
+            <div class="color-swatch" data-color="#111114" style="background:#111114;"></div>
+            <div class="color-swatch" data-color="#1a0306" style="background:#1a0306;"></div>
+            <div class="color-swatch" data-color="#e8192c" style="background:linear-gradient(135deg,#e8192c,#ff4d5e);"></div>
+            <div class="color-swatch" data-color="#f5f0e8" style="background:#f5f0e8;"></div>
+            <div class="color-swatch" data-color="#0d1520" style="background:#0d1520;"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Nom du fichier</label>
+          <input type="text" id="fileName" placeholder="mon-document" value="mon-document">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-num" id="statImages">0</span>
+            <span class="stat-lbl">Image(s)</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="statPages">0</span>
+            <span class="stat-lbl">Page(s)</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="statSize">0</span>
+            <span class="stat-lbl">Mo est.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <div class="card">
+      <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="progress-label" id="progressLabel">Génération en cours...</div>
+        </div>
+        <button class="btn-generate" id="generateBtn" disabled onclick="generatePDF()">
+          <span class="btn-icon">⬇️</span>
+          Générer & Télécharger le PDF
+        </button>
+        <button class="btn-clear" id="clearBtn" onclick="clearAll()">🗑 Effacer toutes les images</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <strong>FTC PDF</strong> — Outil gratuit de création PDF • Traitement 100% local, vos images ne quittent pas votre appareil.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+let images = [];
+let dragSrcIndex = null;
+let selectedBg = '#ffffff';
+
+// Drop zone
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
+
+function handleFiles(files) {
+  const valid = ['image/jpeg','image/png','image/webp','image/gif','image/bmp'];
+  let added = 0;
+  [...files].forEach(file => {
+    if (!valid.includes(file.type)) { showToast(`⚠️ ${file.name} non supporté`); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      images.push({ src: e.target.result, name: file.name, size: file.size });
+      added++;
+      renderGrid();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById('imagesGrid');
+  const empty = document.getElementById('emptyState');
+  const hint = document.getElementById('dragHint');
+  const btn = document.getElementById('generateBtn');
+  const badge = document.getElementById('imgCountBadge');
+
+  grid.innerHTML = '';
+  const has = images.length > 0;
+  empty.classList.toggle('visible', !has);
+  hint.classList.toggle('visible', has);
+  btn.disabled = !has;
+  badge.textContent = `${images.length} image${images.length > 1 ? 's' : ''}`;
+
+  images.forEach((img, i) => {
+    const card = document.createElement('div');
+    card.className = 'image-card';
+    card.draggable = true;
+    card.dataset.index = i;
+    card.innerHTML = `
+      <img src="${img.src}" alt="${img.name}" loading="lazy">
+      <div class="img-overlay">
+        <div class="img-num">${i+1}</div>
+        <button class="btn-remove" onclick="removeImage(${i})" title="Supprimer">✕</button>
+      </div>
+      <div class="img-name">${img.name}</div>
+    `;
+    card.addEventListener('dragstart', () => { dragSrcIndex = i; setTimeout(() => card.classList.add('dragging'), 0); });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', e => e.preventDefault());
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrcIndex !== null && dragSrcIndex !== i) {
+        const moved = images.splice(dragSrcIndex, 1)[0];
+        images.splice(i, 0, moved);
+        renderGrid();
+      }
+    });
+    grid.appendChild(card);
+  });
+
+  updateStats();
+}
+
+function removeImage(i) {
+  images.splice(i, 1);
+  renderGrid();
+  showToast('🗑 Image supprimée');
+}
+
+function clearAll() {
+  if (images.length === 0) return;
+  images = [];
+  renderGrid();
+  showToast('🗑 Toutes les images supprimées');
+}
+
+// BG color
+document.querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    sw.classList.add('active');
+    selectedBg = sw.dataset.color;
+  });
+});
+
+// Stats
+function updateStats() {
+  const count = images.length;
+  const perPage = parseInt(document.querySelector('[name="layout"]:checked').value);
+  const pages = count === 0 ? 0 : Math.ceil(count / perPage);
+  const totalBytes = images.reduce((a, b) => a + (b.size || 0), 0);
+  const mb = (totalBytes / 1024 / 1024).toFixed(1);
+  document.getElementById('statImages').textContent = count;
+  document.getElementById('statPages').textContent = pages;
+  document.getElementById('statSize').textContent = mb;
+}
+
+document.querySelectorAll('[name="layout"]').forEach(r => r.addEventListener('change', updateStats));
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Generate PDF
+async function generatePDF() {
+  if (images.length === 0) return showToast('⚠️ Ajoutez des images d\'abord !');
+
+  const title = document.getElementById('pdfTitle').value || 'FTC PDF';
+  const desc = document.getElementById('pdfDesc').value;
+  const format = document.getElementById('pageFormat').value;
+  const orientation = document.getElementById('pageOrientation').value;
+  const perPage = parseInt(document.querySelector('[name="layout"]:checked').value);
+  const fileName = (document.getElementById('fileName').value || 'ftc-document').replace(/\.pdf$/i,'') + '.pdf';
+
+  const btn = document.getElementById('generateBtn');
+  const pw = document.getElementById('progressWrap');
+  const pb = document.getElementById('progressBar');
+  const pl = document.getElementById('progressLabel');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-icon">⏳</span> Génération en cours...';
+  pw.classList.add('active');
+
+  const doc = new jsPDF({ orientation, format, unit: 'mm' });
+  const pW = doc.internal.pageSize.getWidth();
+  const pH = doc.internal.pageSize.getHeight();
+
+  function hexToRgb(hex) {
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+  }
+
+  const [bgR, bgG, bgB] = hexToRgb(selectedBg);
+  const isDark = (bgR*0.299 + bgG*0.587 + bgB*0.114) < 128;
+  const textColor = isDark ? [255,255,255] : [15,15,20];
+  const accentColor = [232,25,44];
+
+  const margin = 14;
+  const titleH = 20;
+  const descH = desc ? 12 : 0;
+  const footerH = 10;
+  const headerTotal = titleH + descH + 8;
+
+  let cols, rows;
+  if (perPage === 1) { cols = 1; rows = 1; }
+  else if (perPage === 2) { cols = 1; rows = 2; }
+  else if (perPage === 3) { cols = 1; rows = 3; }
+  else { cols = 2; rows = 2; }
+
+  const gap = 5;
+  const contentW = pW - margin * 2;
+  const contentH = pH - headerTotal - margin - footerH;
+  const cellW = (contentW - gap * (cols - 1)) / cols;
+  const cellH = (contentH - gap * (rows - 1)) / rows;
+
+  let pageNum = 1;
+
+  const drawPage = (isFirst) => {
+    doc.setFillColor(bgR, bgG, bgB);
+    doc.rect(0, 0, pW, pH, 'F');
+
+    // Header gradient bar
+    doc.setFillColor(...accentColor);
+    doc.rect(0, 0, pW, 1.5, 'F');
+
+    if (isFirst) {
+      // Title
+      doc.setTextColor(...accentColor);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text(title, margin, margin + 8);
+
+      if (desc) {
+        doc.setTextColor(...textColor);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const lines = doc.splitTextToSize(desc, pW - margin * 2);
+        doc.text(lines, margin, margin + 16);
+      }
+
+      // Separator
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.5);
+      doc.line(margin, margin + 14 + descH, pW - margin, margin + 14 + descH);
+    } else {
+      // Small page header
+      doc.setTextColor(...accentColor);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(title, margin, margin + 5);
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.3);
+      doc.line(margin, margin + 7, pW - margin, margin + 7);
+    }
+
+    // Footer
+    doc.setTextColor(...(isDark ? [100,100,110] : [150,150,160]));
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('FTC PDF', margin, pH - 5);
+    doc.text(`${pageNum}`, pW - margin, pH - 5, { align: 'right' });
+    doc.setDrawColor(...(isDark ? [50,50,60] : [200,200,210]));
+    doc.setLineWidth(0.2);
+    doc.line(margin, pH - 9, pW - margin, pH - 9);
+  };
+
+  drawPage(true);
+
+  const getContentTop = (isFirst) => isFirst ? headerTotal : margin + 12;
+
+  for (let i = 0; i < images.length; i++) {
+    const posInPage = i % perPage;
+    const isFirst = i < perPage;
+    const isNewPage = i > 0 && posInPage === 0;
+
+    if (isNewPage) {
+      doc.addPage();
+      pageNum++;
+      drawPage(false);
+    }
+
+    const pageIsFirst = i < perPage;
+    const contentTop = getContentTop(pageIsFirst && !isNewPage ? true : false);
+    const col = posInPage % cols;
+    const row = Math.floor(posInPage / cols);
+    const x = margin + col * (cellW + gap);
+    const y = (isNewPage ? getContentTop(false) : getContentTop(i < perPage)) + row * (cellH + gap);
+
+    try {
+      const imgObj = new Image();
+      imgObj.src = images[i].src;
+      await new Promise(res => { if (imgObj.complete) res(); else imgObj.onload = res; });
+
+      const iW = imgObj.naturalWidth, iH = imgObj.naturalHeight;
+      const ratio = Math.min(cellW / iW, cellH / iH);
+      const dw = iW * ratio, dh = iH * ratio;
+      const dx = x + (cellW - dw) / 2;
+      const dy = y + (cellH - dh) / 2;
+
+      // Shadow
+      doc.setFillColor(0,0,0);
+      doc.roundedRect(x + 1.5, y + 1.5, cellW, cellH, 2, 2, 'F');
+
+      // Image bg
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(x, y, cellW, cellH, 2, 2, 'F');
+      doc.addImage(images[i].src, 'JPEG', dx, dy, dw, dh);
+
+      // Border
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(x, y, cellW, cellH, 2, 2, 'S');
+
+      // Page number badge on image
+      doc.setFillColor(...accentColor);
+      doc.roundedRect(x + 1, y + 1, 8, 5, 1, 1, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${i+1}`, x + 5, y + 4.5, { align: 'center' });
+    } catch(e) {
+      console.warn('Image error:', e);
+    }
+
+    const pct = Math.round((i + 1) / images.length * 100);
+    pb.style.width = `${pct}%`;
+    pl.textContent = `Traitement ${i+1}/${images.length} — ${pct}%`;
+    await new Promise(r => setTimeout(r, 10));
+  }
+
+  doc.save(fileName);
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="btn-icon">⬇️</span> Générer & Télécharger le PDF';
+  pw.classList.remove('active');
+  pb.style.width = '0%';
+  showToast(`✅ PDF créé — ${images.length} image(s), ${pageNum} page(s)`);
+}
+</script>
+</body>
+</html>
